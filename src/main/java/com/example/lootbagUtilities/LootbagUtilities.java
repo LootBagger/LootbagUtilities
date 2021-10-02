@@ -3,19 +3,16 @@ package com.example.lootbagUtilities;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -28,9 +25,6 @@ public class LootbagUtilities extends Plugin {
 
     @Inject
     private LootbagUtilitiesConfig config;
-
-    @Inject
-    private ItemManager itemManager;
 
     @Override
     protected void startUp() {
@@ -66,92 +60,6 @@ public class LootbagUtilities extends Plugin {
         return new_entries_stream.toArray(MenuEntry[]::new);
     }
 
-
-    // Sorts elements matching predicate of an array according to comparator
-    // leaving elements not matching predicate untouched
-    static <T> void sortSparseArrayView(T[] array, Predicate<T> predicate, Comparator<T> comparator) {
-        ArrayList<Integer> indices = new ArrayList<>();
-        ArrayList<T> indexed_entries = new ArrayList<>();
-        for (int i = 0; i < array.length; i++) {
-            T item = array[i];
-            if (predicate.test(item)) {
-                indices.add(i);
-                indexed_entries.add(item);
-            }
-        }
-        indexed_entries.sort(comparator);
-        for (int i = 0; i < indices.size(); i++) {
-            int index = indices.get(i);
-            array[index] = indexed_entries.get(i);
-        }
-    }
-
-    // Code that gets called both onClientTick and onMenuOpened
-    private void doGroundItemSwaps(MenuEntry[] entries) {
-        // it is possible to right-click on more than one tile, so store all tiles
-        HashSet<WorldPoint> menuPoints = new HashSet<>();
-        // param0 and param1 on "take" menu options are scene coordinates
-        Arrays
-                .stream(entries)
-                .filter((entry) -> entry.getOption().equals("Take"))
-                .forEach((entry) -> {
-                    int x = entry.getParam0();
-                    int y = entry.getParam1();
-                    WorldPoint worldPoint = WorldPoint.fromScene(client, x, y, client.getPlane());
-                    menuPoints.add(worldPoint);
-                });
-        //find ground items located at points
-        HashMap<WorldPoint, Tile> tiles = new HashMap<>();
-        //include only tiles from menuPoints
-        for (Tile[][] tiles2d : client.getScene().getTiles()) {
-            for (Tile[] tiles1d : tiles2d) {
-                for (Tile tile : tiles1d) {
-                    if (tile != null) {
-                        WorldPoint tileLocation = tile.getWorldLocation();
-                        if (menuPoints.contains(tileLocation)) {
-                            tiles.put(tileLocation, tile);
-                        }
-                    }
-                }
-            }
-        }
-
-        Comparator<MenuEntry> comparator;
-        SortOrder order = config.orderGroundItemsBy();
-        if (order == SortOrder.ALCHEMY) {
-            comparator = Comparator.comparingInt((entry) ->
-                    getQuantity(entry, tiles) * getPrice(entry.getIdentifier()));
-        } else if (order == SortOrder.ALPHABETICAL) {
-            comparator = (MenuEntry left, MenuEntry right) ->
-                    -left.getTarget().compareToIgnoreCase(right.getTarget());
-        } else if (order == SortOrder.GRAND_EXCHANGE) {
-            comparator = Comparator.comparingInt((entry) ->
-                    getQuantity(entry, tiles) * getGePrice(entry.getIdentifier()));
-        } else /*(order == SortOrder.ACTIVELY_TRADED)*/ {
-            comparator = Comparator.comparingInt((entry) ->
-                    getQuantity(entry, tiles) * getActivePrice(entry.getIdentifier()));
-        }
-
-        Comparator<MenuEntry> final_comparator = comparator;
-        if (config.untradeablesOnTop()) {
-            final_comparator = (MenuEntry left, MenuEntry right) -> {
-                boolean left_tradeable = itemManager.getItemComposition(left.getIdentifier()).isTradeable();
-                boolean right_tradeable = itemManager.getItemComposition(right.getIdentifier()).isTradeable();
-                if (left_tradeable && !right_tradeable) {
-                    return -1;
-                } else if (right_tradeable && !left_tradeable) {
-                    return 1;
-                } else {
-                    return comparator.compare(left, right);
-                }
-            };
-        }
-
-        sortSparseArrayView(entries, (entry) -> entry.getOption().equals("Take"), final_comparator);
-
-        client.setMenuEntries(entries);
-    }
-
     private void doInventorySwaps(MenuEntry[] entries) {
         //swap open with use on looting bag
         int openIdx = -1;
@@ -175,32 +83,6 @@ public class LootbagUtilities extends Plugin {
         client.setMenuEntries(entries);
     }
 
-    int getPrice(int itemId) {
-        return itemManager.getItemComposition(itemId).getPrice();
-    }
-
-    int getGePrice(int itemId) {
-        return itemManager.getItemPriceWithSource(itemId, false);
-    }
-
-    int getActivePrice(int itemId) {
-        return itemManager.getItemPriceWithSource(itemId, true);
-    }
-
-    private Integer getQuantity(MenuEntry entry, HashMap<WorldPoint, Tile> relevant_tiles) {
-        int x = entry.getParam0();
-        int y = entry.getParam1();
-        WorldPoint location = WorldPoint.fromScene(client, x, y, client.getPlane());
-        return relevant_tiles
-                .get(location)
-                .getGroundItems()
-                .stream()
-                .filter((TileItem tileItem) -> tileItem.getId() == entry.getIdentifier())
-                .findAny()
-                .map(tileItem -> tileItem.getQuantity())
-                .orElse(1);
-    }
-
     @Subscribe
     public void onClientTick(ClientTick clientTick) {
         // don't swap if menu is open, otherwise items repeatedly swap back and forth
@@ -210,16 +92,6 @@ public class LootbagUtilities extends Plugin {
 
         if (config.leftClickUseLootingBag()) {
             doInventorySwaps(client.getMenuEntries());
-        }
-
-        MenuEntry[] entries = client.getMenuEntries();
-        if (config.reorderGroundItems()) {
-            boolean groundItems = Arrays
-                    .stream(entries)
-                    .anyMatch((entry) -> entry.getOption().equals("Take"));
-            if (groundItems) {
-                doGroundItemSwaps(entries);
-            }
         }
     }
 
@@ -235,17 +107,6 @@ public class LootbagUtilities extends Plugin {
             if (config.RemoveDestroyOption() && targets_looting_bag && !getInWilderness()) {
                 log.debug("Removing destroy entry on looting bag menu...");
                 client.setMenuEntries(removeDestroyOption(entries));
-            }
-        }
-
-        entries = client.getMenuEntries();
-        if (config.reorderGroundItems()) {
-            // alphabetize items on ground
-            boolean groundItems = Arrays
-                    .stream(entries)
-                    .anyMatch((entry) -> entry.getOption().equals("Take"));
-            if (groundItems) {
-                doGroundItemSwaps(entries);
             }
         }
     }
