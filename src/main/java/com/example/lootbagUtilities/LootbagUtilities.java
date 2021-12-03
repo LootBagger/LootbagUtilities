@@ -100,7 +100,7 @@ public class LootbagUtilities extends Plugin {
     // the predicate p (return true)
     static <P extends Predicate<MenuEntry>> MenuEntry[] removeDestroyOption(MenuEntry[] entries, P p) {
         Stream<MenuEntry> new_entries_stream = Arrays.stream(entries).filter(
-                (MenuEntry entry) -> entry.getOption().equals("Destroy") && p.test(entry)
+                (MenuEntry entry) -> !entry.getOption().equals("Destroy") || !p.test(entry)
         );
         return new_entries_stream.toArray(MenuEntry[]::new);
     }
