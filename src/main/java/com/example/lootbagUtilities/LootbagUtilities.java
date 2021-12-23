@@ -83,19 +83,24 @@ public class LootbagUtilities extends Plugin {
                         "Open Looting Bag"
                 ),
                 new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.RUNE_POUCH, "Rune Pouch"),
+                new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.RUNE_POUCH_23650, "Rune Pouch"),
+                new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.RUNE_POUCH_L, "Rune Pouch"),
                 new DestroyableItem(config::RemoveSeedBoxDestroy, ItemID.SEED_BOX, "Seed Box"),
                 new DestroyableItem(config::RemoveSeedBoxDestroy, ItemID.OPEN_SEED_BOX, "Open Seed Box"),
                 new DestroyableItem(config::RemoveBoltPouchDestroy, ItemID.BOLT_POUCH, "Bolt Pouch"),
                 new DestroyableItem(config::RemoveHerbSackDestroy, ItemID.HERB_SACK, "Herb Sack"),
-                //TODO: look into coal bag alternate ids
+                new DestroyableItem(config::RemoveHerbSackDestroy, ItemID.OPEN_HERB_SACK, "Herb Sack"),
                 new DestroyableItem(config::RemoveCoalBagDestroy, ItemID.COAL_BAG, "Coal Bag"),
                 new DestroyableItem(config::RemoveCoalBagDestroy, ItemID.OPEN_COAL_BAG, "Open Coal Bag"),
+                new DestroyableItem(config::RemoveCoalBagDestroy, ItemID.COAL_BAG_12019, "Alt Coal Bag"),
+                new DestroyableItem(config::RemoveCoalBagDestroy, ItemID.COAL_BAG_25627, "Alt Coal Bag"),
                 new DestroyableItem(config::RemoveFishBarrelDestroy, ItemID.FISH_BARREL, "Fish Barrel"),
                 new DestroyableItem(config::RemoveFishBarrelDestroy, ItemID.FISH_SACK_BARREL, "Fish Sack Barrel"),
                 new DestroyableItem(config::RemoveFishBarrelDestroy, ItemID.OPEN_FISH_BARREL, "Open Fish Barrel"),
                 new DestroyableItem(config::RemoveFishBarrelDestroy, ItemID.OPEN_FISH_SACK_BARREL, "Open Fish Sack Barrel"),
-                //TODO: look into gem bag alternate ids
                 new DestroyableItem(config::RemoveGemBagDestroy, ItemID.GEM_BAG, "Gem Bag"),
+                new DestroyableItem(config::RemoveGemBagDestroy, ItemID.GEM_BAG_12020, "Alt Gem Bag"),
+                new DestroyableItem(config::RemoveGemBagDestroy, ItemID.GEM_BAG_25628, "Alt Gem Bag"),
                 new DestroyableItem(config::RemoveGemBagDestroy, ItemID.OPEN_GEM_BAG, "Open Gem Bag"),
                 new DestroyableItem(config::RemoveTackleBoxDestroy, ItemID.TACKLE_BOX, "Tackle Box"),
         };
