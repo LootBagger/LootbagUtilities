@@ -22,7 +22,7 @@ public interface LootbagUtilitiesConfig extends Config
 			name = "Remove Destroy on Looting Bag",
 			description = "Remove destroy option from looting bag right-click menu when outside the wilderness"
 	)
-	default boolean RemoveLootingBagDestroyOption() { return true; }
+	default boolean RemoveLootingBagDestroy() { return true; }
 
 	@ConfigSection(
 			name = "Other Destroyables",

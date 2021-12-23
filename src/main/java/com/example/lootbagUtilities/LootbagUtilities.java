@@ -2,7 +2,13 @@ package com.example.lootbagUtilities;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
+
+import net.runelite.api.Client;
+import net.runelite.api.Varbits;
+import net.runelite.api.ItemID;
+import net.runelite.api.MenuEntry;
+import net.runelite.api.GameState;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
@@ -28,56 +34,24 @@ public class LootbagUtilities extends Plugin {
     @Inject
     private LootbagUtilitiesConfig config;
 
-    // This is just plain old data. In a language with a more expressive type system,
-    // this class would not exist, a tuple of BooleanSupplier, int, String
-    // would be used instead
-    private static final class DestroyableItem {
-        public BooleanSupplier config;
+    // declarative way to remove destroy options on items
+    DestroyableItem[] removeDestroyList;
+
+    // Represents an item that can be destroyed. Plain old data.
+    static final class DestroyableItem {
+        // Whether to remove the destroy option on this item
+        public BooleanSupplier removeDestroy;
+        // The itemId of the item with a destroy option
         public int itemId;
+        // The name of the item with a destroy option. Used only for logging
         public String itemName;
 
-        DestroyableItem(BooleanSupplier config, int itemId, String itemName) {
+        DestroyableItem(BooleanSupplier removeDestroy, int itemId, String itemName) {
             super();
-            this.config = config;
+            this.removeDestroy = removeDestroy;
             this.itemId = itemId;
-            this.itemName = itemName; // only used for logging
+            this.itemName = itemName;
         }
-    }
-
-    // declarative way to remove destroy options on items
-    private final DestroyableItem[] removeDestroyList = new DestroyableItem[]{
-            //TODO: figure out what ItemID.LOOTING_BAG_22586 is
-            new DestroyableItem(
-                    () -> config.RemoveLootingBagDestroyOption() && !getInWilderness(),
-                    ItemID.LOOTING_BAG,
-                    "Looting Bag"
-            ),
-            new DestroyableItem(() -> config.RemoveRunePouchDestroy(), ItemID.RUNE_POUCH, "Rune Pouch"),
-            new DestroyableItem(() -> config.RemoveSeedBoxDestroy(), ItemID.SEED_BOX, "Seed Box"),
-            new DestroyableItem(() -> config.RemoveSeedBoxDestroy(), ItemID.OPEN_SEED_BOX, "Open Seed Box"),
-            new DestroyableItem(() -> config.RemoveBoltPouchDestroy(), ItemID.BOLT_POUCH, "Bolt Pouch"),
-            new DestroyableItem(() -> config.RemoveHerbSackDestroy(), ItemID.HERB_SACK, "Herb Sack"),
-            //TODO: look into coal bag alternate ids
-            new DestroyableItem(() -> config.RemoveCoalBagDestroy(), ItemID.COAL_BAG, "Coal Bag"),
-            new DestroyableItem(() -> config.RemoveCoalBagDestroy(), ItemID.OPEN_COAL_BAG, "Open Coal Bag"),
-            new DestroyableItem(() -> config.RemoveFishBarrelDestroy(), ItemID.FISH_BARREL, "Fish Barrel"),
-            new DestroyableItem(() -> config.RemoveFishBarrelDestroy(), ItemID.FISH_SACK_BARREL, "Fish Sack Barrel"),
-            new DestroyableItem(() -> config.RemoveFishBarrelDestroy(), ItemID.OPEN_FISH_BARREL, "Open Fish Barrel"),
-            new DestroyableItem(() -> config.RemoveFishBarrelDestroy(), ItemID.OPEN_FISH_SACK_BARREL, "Open Fish Sack Barrel"),
-            //TODO: look into gem bag alternate ids
-            new DestroyableItem(() -> config.RemoveGemBagDestroy(), ItemID.GEM_BAG, "Gem Bag"),
-            new DestroyableItem(() -> config.RemoveGemBagDestroy(), ItemID.OPEN_GEM_BAG, "Open Gem Bag"),
-            new DestroyableItem(() -> config.RemoveTackleBoxDestroy(), ItemID.TACKLE_BOX, "Tackle Box"),
-    };
-
-    @Override
-    protected void startUp() {
-        log.info("LootbagUtilities started!");
-    }
-
-    @Override
-    protected void shutDown() {
-        log.info("LootbagUtilities stopped!");
     }
 
     // check varbits to determine if player is in wilderness
@@ -96,22 +70,59 @@ public class LootbagUtilities extends Plugin {
         }
     }
 
-    // Removes "destroy" options from an array of MenuEntry if they satisfy
-    // the predicate p (return true)
-    static <P extends Predicate<MenuEntry>> MenuEntry[] removeDestroyOption(MenuEntry[] entries, P p) {
-        Stream<MenuEntry> new_entries_stream = Arrays.stream(entries).filter(
-                (MenuEntry entry) -> !entry.getOption().equals("Destroy") || !p.test(entry)
-        );
-        return new_entries_stream.toArray(MenuEntry[]::new);
+    static DestroyableItem[] genDestroyList(LootbagUtilitiesConfig config, BooleanSupplier getInWilderness) {
+        return new DestroyableItem[]{
+                new DestroyableItem(
+                        () -> config.RemoveLootingBagDestroy() && !getInWilderness.getAsBoolean(),
+                        ItemID.LOOTING_BAG,
+                        "Looting Bag"
+                ),
+                new DestroyableItem(
+                        () -> config.RemoveLootingBagDestroy() && !getInWilderness.getAsBoolean(),
+                        ItemID.LOOTING_BAG_22586,
+                        "Open Looting Bag"
+                ),
+                new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.RUNE_POUCH, "Rune Pouch"),
+                new DestroyableItem(config::RemoveSeedBoxDestroy, ItemID.SEED_BOX, "Seed Box"),
+                new DestroyableItem(config::RemoveSeedBoxDestroy, ItemID.OPEN_SEED_BOX, "Open Seed Box"),
+                new DestroyableItem(config::RemoveBoltPouchDestroy, ItemID.BOLT_POUCH, "Bolt Pouch"),
+                new DestroyableItem(config::RemoveHerbSackDestroy, ItemID.HERB_SACK, "Herb Sack"),
+                //TODO: look into coal bag alternate ids
+                new DestroyableItem(config::RemoveCoalBagDestroy, ItemID.COAL_BAG, "Coal Bag"),
+                new DestroyableItem(config::RemoveCoalBagDestroy, ItemID.OPEN_COAL_BAG, "Open Coal Bag"),
+                new DestroyableItem(config::RemoveFishBarrelDestroy, ItemID.FISH_BARREL, "Fish Barrel"),
+                new DestroyableItem(config::RemoveFishBarrelDestroy, ItemID.FISH_SACK_BARREL, "Fish Sack Barrel"),
+                new DestroyableItem(config::RemoveFishBarrelDestroy, ItemID.OPEN_FISH_BARREL, "Open Fish Barrel"),
+                new DestroyableItem(config::RemoveFishBarrelDestroy, ItemID.OPEN_FISH_SACK_BARREL, "Open Fish Sack Barrel"),
+                //TODO: look into gem bag alternate ids
+                new DestroyableItem(config::RemoveGemBagDestroy, ItemID.GEM_BAG, "Gem Bag"),
+                new DestroyableItem(config::RemoveGemBagDestroy, ItemID.OPEN_GEM_BAG, "Open Gem Bag"),
+                new DestroyableItem(config::RemoveTackleBoxDestroy, ItemID.TACKLE_BOX, "Tackle Box"),
+        };
     }
 
-    private void doInventorySwaps(MenuEntry[] entries) {
+    @Override
+    protected void startUp() {
+        log.info("LootbagUtilities started!");
+        removeDestroyList = genDestroyList(config, this::getInWilderness);
+    }
+
+    @Override
+    protected void shutDown() {
+        log.info("LootbagUtilities stopped!");
+    }
+
+    static boolean isLootingBag(int itemId) {
+        return itemId == ItemID.LOOTING_BAG || itemId == ItemID.LOOTING_BAG_22586;
+    }
+
+    static MenuEntry[] doInventorySwaps(MenuEntry[] entries) {
         //swap open with use on looting bag
         int openIdx = -1;
         int useIdx = -1;
         for (int i = 0; i < entries.length; i++) {
             MenuEntry entry = entries[i];
-            if (entry.getIdentifier() == ItemID.LOOTING_BAG) {
+            if (isLootingBag(entry.getIdentifier())) {
                 if (entry.getOption().equals("Use")) {
                     useIdx = i;
                 }
@@ -125,7 +136,7 @@ public class LootbagUtilities extends Plugin {
             entries[openIdx] = entries[useIdx];
             entries[useIdx] = tmp;
         }
-        client.setMenuEntries(entries);
+        return entries;
     }
 
     @Subscribe
@@ -136,39 +147,53 @@ public class LootbagUtilities extends Plugin {
         }
 
         if (config.leftClickUseLootingBag()) {
-            doInventorySwaps(client.getMenuEntries());
+            client.setMenuEntries(doInventorySwaps(client.getMenuEntries()));
         }
+    }
+
+    // Does all processing related to removing "destroy" MenuEntries.
+    // this method is static and takes arguments to make testing easier,
+    // even though in this class all instances will be called with this class' instances
+    static MenuEntry[] removeDestroy(MenuEntry[] entries, DestroyableItem[] removeDestroyList) {
+        // Remove destroy options on various items
+        Stream<MenuEntry> entryStream = Arrays.stream(entries);
+        for (DestroyableItem r : removeDestroyList) {
+            Predicate<MenuEntry> p = (MenuEntry entry) -> {
+                if (entry.getIdentifier() == r.itemId) {
+                    log.debug("Removing destroy option on {}", r.itemName);
+                    return true;
+                } else {
+                    return false;
+                }
+            };
+            if (r.removeDestroy.getAsBoolean()) {
+                entryStream = entryStream.filter(
+                        (MenuEntry entry) -> !entry.getOption().equals("Destroy") || !p.test(entry)
+                );
+            }
+        }
+        return entryStream.toArray(MenuEntry[]::new);
     }
 
     @Subscribe
     public void onMenuOpened(MenuOpened _unused) {
         MenuEntry[] entries = client.getMenuEntries();
         // Remove destroy options on various items
-        for (DestroyableItem r : removeDestroyList) {
-            if (r.config.getAsBoolean()) {
-                entries = removeDestroyOption(entries, (MenuEntry entry) -> {
-                    if (entry.getIdentifier() == r.itemId) {
-                        log.debug("Removing destroy option on {}", r.itemName);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                });
-            }
-        }
+        entries = removeDestroy(entries, removeDestroyList);
 
         client.setMenuEntries(entries);
     }
 
+    static boolean consumeEvent(MenuOptionClicked clickedOption, BooleanSupplier inWildy) {
+        boolean targetsLootingBag = isLootingBag(clickedOption.getId());
+        return targetsLootingBag
+                && clickedOption.getMenuOption().equals("Destroy")
+                && !inWildy.getAsBoolean();
+    }
+
     @Subscribe
     public void onMenuOptionClicked(MenuOptionClicked clickedOption) {
-        boolean targets_looting_bag = clickedOption.getId() == ItemID.LOOTING_BAG
-                || clickedOption.getMenuTarget().endsWith("Looting bag");
-        // clicked destroy on looting bag outside wilderness
-        if (targets_looting_bag
-                && clickedOption.getMenuOption().equals("Destroy")
-                && !getInWilderness()
-        ) {
+        if(consumeEvent(clickedOption, this::getInWilderness)) {
             //consume event (it is not sent to server)
             clickedOption.consume();
             client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
