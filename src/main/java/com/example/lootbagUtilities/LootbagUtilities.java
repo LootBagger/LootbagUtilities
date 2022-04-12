@@ -57,7 +57,7 @@ public class LootbagUtilities extends Plugin {
     // check varbits to determine if player is in wilderness
     // logs any unexpected varbit
     boolean getInWilderness() {
-        int wilderness_varbit = client.getVarbitValue(Varbits.IN_WILDERNESS.getId());
+        int wilderness_varbit = client.getVarbitValue(Varbits.IN_WILDERNESS);
         if (wilderness_varbit == 1) {
             return true;
         } else if (wilderness_varbit == 0) {
