@@ -96,7 +96,9 @@ public class LootbagUtilities extends Plugin {
                 ),
                 new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.RUNE_POUCH, "Rune Pouch"),
                 new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.RUNE_POUCH_23650, "Rune Pouch"),
-                new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.RUNE_POUCH_L, "Rune Pouch"),
+                new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.RUNE_POUCH_L, "Rune Pouch(l)"),
+                new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.DIVINE_RUNE_POUCH, "Divine Rune Pouch"),
+                new DestroyableItem(config::RemoveRunePouchDestroy, ItemID.DIVINE_RUNE_POUCH_L, "Divine Rune Pouch(l)"),
                 new DestroyableItem(config::RemoveSeedBoxDestroy, ItemID.SEED_BOX, "Seed Box"),
                 new DestroyableItem(config::RemoveSeedBoxDestroy, ItemID.OPEN_SEED_BOX, "Open Seed Box"),
                 new DestroyableItem(config::RemoveBoltPouchDestroy, ItemID.BOLT_POUCH, "Bolt Pouch"),
@@ -213,7 +215,6 @@ public class LootbagUtilities extends Plugin {
 
     // Does all processing related to removing "destroy" MenuEntries.
     // this method is static and takes arguments to make testing easier,
-    // even though in this class all instances will be called with this class' instances
     static MenuEntry[] removeDestroy(MenuEntry[] entries, DestroyableItem[] removeDestroyList) {
         // Remove destroy options on various items
         Stream<MenuEntry> entryStream = Arrays.stream(entries);
