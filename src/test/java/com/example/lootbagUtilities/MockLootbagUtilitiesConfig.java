@@ -7,7 +7,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class MockLootbagUtilitiesConfig implements LootbagUtilitiesConfig{
     boolean leftClickUseLootingBag;
-    boolean RemoveLootingBagDestroy;
+    LootingBagDestroySetting RemoveLootingBagDestroy;
     boolean RemoveRunePouchDestroy;
     boolean RemoveBoltPouchDestroy;
     boolean RemoveSeedBoxDestroy;
@@ -20,7 +20,7 @@ public class MockLootbagUtilitiesConfig implements LootbagUtilitiesConfig{
     @Override
     public boolean leftClickUseLootingBag() { return leftClickUseLootingBag; }
     @Override
-    public boolean RemoveLootingBagDestroy() { return RemoveLootingBagDestroy; }
+    public LootingBagDestroySetting LootingBagDestroySetting() { return RemoveLootingBagDestroy; }
     @Override
     public boolean RemoveRunePouchDestroy() { return RemoveRunePouchDestroy; }
     @Override

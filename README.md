@@ -8,3 +8,6 @@ This prevents situations like [this](https://www.twitch.tv/whale/clip/SpoopySpoo
 ## Menu Entry Swap on looting bag
 Makes Use the default option on looting bags to make bagging from the inventory quicker.
 ![](images/lootbag_options.png?raw=true)
+
+## Menu Entry Swap on deposit interface of looting bag
+Makes Deposit all the shift click option on the deposit interface of the looting bag

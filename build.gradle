@@ -10,7 +10,7 @@ repositories {
 	mavenCentral()
 }
 
-def runeLiteVersion = '1.8.17-SNAPSHOT'
+def runeLiteVersion = '1.9.3'
 
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
@@ -18,8 +18,14 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok:1.18.20'
 	annotationProcessor 'org.projectlombok:lombok:1.18.20'
 
+	compileOnly 'org.jetbrains:annotations:23.0.0'
+	annotationProcessor 'org.jetbrains:annotations:23.0.0'
+
 	testCompileOnly 'org.projectlombok:lombok:1.18.20'
 	testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+	testCompileOnly 'org.jetbrains:annotations:23.0.0'
+	testAnnotationProcessor 'org.jetbrains:annotations:23.0.0'
 
 	testImplementation 'junit:junit:4.13.2'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion

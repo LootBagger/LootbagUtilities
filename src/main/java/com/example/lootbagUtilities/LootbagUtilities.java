@@ -3,15 +3,12 @@ package com.example.lootbagUtilities;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 
-import net.runelite.api.Client;
-import net.runelite.api.Varbits;
-import net.runelite.api.ItemID;
-import net.runelite.api.MenuEntry;
-import net.runelite.api.GameState;
-import net.runelite.api.ChatMessageType;
+import net.runelite.api.*;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.widgets.Widget;
+import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -37,7 +34,8 @@ public class LootbagUtilities extends Plugin {
     // declarative way to remove destroy options on items
     DestroyableItem[] removeDestroyList;
 
-    // Represents an item that can be destroyed. Plain old data.
+    // Represents an item that can be destroyed and a function
+    // to decide if the destroy option should be removed
     static final class DestroyableItem {
         // Whether to remove the destroy option on this item
         public BooleanSupplier removeDestroy;
@@ -70,15 +68,29 @@ public class LootbagUtilities extends Plugin {
         }
     }
 
+    static Boolean removeLootingBagDestroy(LootbagUtilitiesConfig.LootingBagDestroySetting setting, boolean inWilderness) {
+        if (setting == LootbagUtilitiesConfig.LootingBagDestroySetting.REMOVE) {
+            return true;
+        } else if (setting == LootbagUtilitiesConfig.LootingBagDestroySetting.ALLOW) {
+            return false;
+        } else if (setting == LootbagUtilitiesConfig.LootingBagDestroySetting.ALLOW_IN_WILDY) {
+            return inWilderness;
+        } else {
+            log.error("An enum was added to LootingBagDestroySetting and this if/else was not updated");
+            assert(false);
+            return true;
+        }
+    }
+
     static DestroyableItem[] genDestroyList(LootbagUtilitiesConfig config, BooleanSupplier getInWilderness) {
         return new DestroyableItem[]{
                 new DestroyableItem(
-                        () -> config.RemoveLootingBagDestroy() && !getInWilderness.getAsBoolean(),
+                        () -> removeLootingBagDestroy(config.LootingBagDestroySetting(), !getInWilderness.getAsBoolean()),
                         ItemID.LOOTING_BAG,
                         "Looting Bag"
                 ),
                 new DestroyableItem(
-                        () -> config.RemoveLootingBagDestroy() && !getInWilderness.getAsBoolean(),
+                        () -> removeLootingBagDestroy(config.LootingBagDestroySetting(), !getInWilderness.getAsBoolean()),
                         ItemID.LOOTING_BAG_22586,
                         "Open Looting Bag"
                 ),
@@ -108,40 +120,75 @@ public class LootbagUtilities extends Plugin {
 
     @Override
     protected void startUp() {
-        log.info("LootbagUtilities started!");
         removeDestroyList = genDestroyList(config, this::getInWilderness);
     }
 
     @Override
     protected void shutDown() {
-        log.info("LootbagUtilities stopped!");
     }
 
     static boolean isLootingBag(int itemId) {
-        return itemId == ItemID.LOOTING_BAG || itemId == ItemID.LOOTING_BAG_22586;
+
+        return
+                itemId == ItemID.LOOTING_BAG // Closed looting bag
+                        || itemId == ItemID.LOOTING_BAG_22586; //Opened looting bag
     }
 
-    static MenuEntry[] doInventorySwaps(MenuEntry[] entries) {
-        //swap open with use on looting bag
-        int openIdx = -1;
+    //swap open with use on looting bag
+    //mutates in place
+    static void doInventorySwaps(MenuEntry[] entries) {
+        //can't swap 1 or fewer things
+        if (entries.length < 2) {
+            return;
+        }
+
+        //index of the option at the top of the list/left click option
+        int firstIdx = entries.length-1;
         int useIdx = -1;
         for (int i = 0; i < entries.length; i++) {
             MenuEntry entry = entries[i];
-            if (isLootingBag(entry.getIdentifier())) {
+            Widget widget = entry.getWidget();
+            //right click options of a looting bag
+            if (widget!=null && isLootingBag(widget.getItemId())) {
                 if (entry.getOption().equals("Use")) {
                     useIdx = i;
                 }
-                if (entry.getOption().equals("Open")) {
-                    openIdx = i;
-                }
             }
         }
-        if (openIdx != -1 && useIdx != -1) {
-            MenuEntry tmp = entries[openIdx];
-            entries[openIdx] = entries[useIdx];
+        if (useIdx != -1) {
+            MenuEntry tmp = entries[firstIdx];
+            entries[firstIdx] = entries[useIdx];
             entries[useIdx] = tmp;
         }
-        return entries;
+    }
+
+    static<T> void swap(T[] array, int first, int second) {
+        T tmp = array[first];
+        array[first] = array[second];
+        array[second] = tmp;
+    }
+
+    // do MenuEntry swaps on options in the check/deposit interface of the looting bag
+    static void doLootingBagSwaps(MenuEntry[] entries) {
+        if (entries.length < 2) {
+            return;
+        }
+        int firstIdx = entries.length-1;
+        int depositAllIdx = -1;
+        for (int i = 0; i< entries.length; i++) {
+            MenuEntry entry = entries[i];
+            if (entry.getOption().equals("Store-All")) {
+                depositAllIdx = i;
+                break;
+            }
+        }
+        //swap option and move other options forward
+        if (depositAllIdx != -1) {
+            swap(entries, firstIdx, depositAllIdx);
+            for(int i=depositAllIdx; i<firstIdx-1; i++) {
+                swap(entries, i, i+1);
+            }
+        }
     }
 
     @Subscribe
@@ -151,9 +198,17 @@ public class LootbagUtilities extends Plugin {
             return;
         }
 
+        MenuEntry[] entries = client.getMenuEntries();
+
         if (config.leftClickUseLootingBag()) {
-            client.setMenuEntries(doInventorySwaps(client.getMenuEntries()));
+            doInventorySwaps(entries);
         }
+        if ((config.LootingBagStoreAll() == LootbagUtilitiesConfig.LootingBagStoreAll.LEFT_CLICK ||
+                config.LootingBagStoreAll() == LootbagUtilitiesConfig.LootingBagStoreAll.SHIFT_CLICK && client.isKeyPressed(KeyCode.KC_SHIFT))
+                && isLootingBagInterfaceOpen()) {
+            doLootingBagSwaps(entries);
+        }
+        client.setMenuEntries(entries);
     }
 
     // Does all processing related to removing "destroy" MenuEntries.
@@ -164,7 +219,7 @@ public class LootbagUtilities extends Plugin {
         Stream<MenuEntry> entryStream = Arrays.stream(entries);
         for (DestroyableItem r : removeDestroyList) {
             Predicate<MenuEntry> p = (MenuEntry entry) -> {
-                if (entry.getIdentifier() == r.itemId) {
+                if (entry.getItemId() == r.itemId) {
                     log.debug("Removing destroy option on {}", r.itemName);
                     return true;
                 } else {
@@ -180,32 +235,40 @@ public class LootbagUtilities extends Plugin {
         return entryStream.toArray(MenuEntry[]::new);
     }
 
+    private boolean isLootingBagInterfaceOpen() {
+        return client.getWidget(WidgetInfo.LOOTING_BAG_CONTAINER) != null;
+    }
+
     @Subscribe
     public void onMenuOpened(MenuOpened _unused) {
         MenuEntry[] entries = client.getMenuEntries();
         // Remove destroy options on various items
         entries = removeDestroy(entries, removeDestroyList);
 
-        client.setMenuEntries(entries);
-    }
+        if ((config.LootingBagStoreAll() == LootbagUtilitiesConfig.LootingBagStoreAll.LEFT_CLICK ||
+                config.LootingBagStoreAll() == LootbagUtilitiesConfig.LootingBagStoreAll.SHIFT_CLICK && client.isKeyPressed(KeyCode.KC_SHIFT))
+                && isLootingBagInterfaceOpen()) {
+            doLootingBagSwaps(entries);
+        }
 
-    static boolean consumeEvent(MenuOptionClicked clickedOption, BooleanSupplier inWildy) {
-        boolean targetsLootingBag = isLootingBag(clickedOption.getId());
-        return targetsLootingBag
-                && clickedOption.getMenuOption().equals("Destroy")
-                && !inWildy.getAsBoolean();
+        client.setMenuEntries(entries);
     }
 
     @Subscribe
     public void onMenuOptionClicked(MenuOptionClicked clickedOption) {
-        if(consumeEvent(clickedOption, this::getInWilderness)) {
+        Widget clickedWidget = clickedOption.getWidget();
+        if ( clickedWidget != null
+                && isLootingBag(clickedWidget.getItemId())
+                && clickedOption.getMenuOption().equals("Destroy")
+                && removeLootingBagDestroy(config.LootingBagDestroySetting(), getInWilderness())
+        ) {
             //consume event (it is not sent to server)
             clickedOption.consume();
             client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
-                    "A magical force (LootbagUtilities plugin) prevents you from destroying your looting bag",
-                    ""
+                                  "A magical force (LootbagUtilities plugin) prevents you from destroying your looting bag",
+                                  ""
             );
-            log.debug("User tried to destroy looting bag outside the wilderness");
+            log.debug("User tried to destroy looting bag when not allowed");
         }
     }
 

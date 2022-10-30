@@ -8,6 +8,18 @@ import net.runelite.client.config.ConfigSection;
 @ConfigGroup("lootbagUtilities")
 public interface LootbagUtilitiesConfig extends Config
 {
+	enum LootingBagDestroySetting {
+		ALLOW,
+		REMOVE,
+		ALLOW_IN_WILDY,
+	}
+
+	enum LootingBagStoreAll {
+		@SuppressWarnings("unused")
+		RIGHT_CLICK,
+		LEFT_CLICK,
+		SHIFT_CLICK,
+	}
 	@ConfigItem(
 			keyName = "leftClickUseLootingBag",
 			name = "Default 'use' looting bag",
@@ -22,7 +34,18 @@ public interface LootbagUtilitiesConfig extends Config
 			name = "Remove Destroy on Looting Bag",
 			description = "Remove destroy option from looting bag right-click menu when outside the wilderness"
 	)
-	default boolean RemoveLootingBagDestroy() { return true; }
+	default LootingBagDestroySetting LootingBagDestroySetting() {
+		return LootingBagDestroySetting.ALLOW_IN_WILDY;
+	}
+
+	@ConfigItem(
+			keyName = "swapStoreAll",
+			name = "Swap store-all option in looting bag interface",
+			description = "Make store-all the dafault option in looting bag deposit interface"
+	)
+	default LootingBagStoreAll LootingBagStoreAll() {
+		return LootingBagStoreAll.SHIFT_CLICK;
+	}
 
 	@ConfigSection(
 			name = "Other Destroyables",
