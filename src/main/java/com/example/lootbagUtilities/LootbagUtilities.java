@@ -74,7 +74,7 @@ public class LootbagUtilities extends Plugin {
         } else if (setting == LootbagUtilitiesConfig.LootingBagDestroySetting.ALLOW) {
             return false;
         } else if (setting == LootbagUtilitiesConfig.LootingBagDestroySetting.ALLOW_IN_WILDY) {
-            return inWilderness;
+            return !inWilderness;
         } else {
             log.error("An enum was added to LootingBagDestroySetting and this if/else was not updated");
             assert(false);
@@ -85,12 +85,12 @@ public class LootbagUtilities extends Plugin {
     static DestroyableItem[] genDestroyList(LootbagUtilitiesConfig config, BooleanSupplier getInWilderness) {
         return new DestroyableItem[]{
                 new DestroyableItem(
-                        () -> removeLootingBagDestroy(config.LootingBagDestroySetting(), !getInWilderness.getAsBoolean()),
+                        () -> removeLootingBagDestroy(config.LootingBagDestroySetting(), getInWilderness.getAsBoolean()),
                         ItemID.LOOTING_BAG,
                         "Looting Bag"
                 ),
                 new DestroyableItem(
-                        () -> removeLootingBagDestroy(config.LootingBagDestroySetting(), !getInWilderness.getAsBoolean()),
+                        () -> removeLootingBagDestroy(config.LootingBagDestroySetting(), getInWilderness.getAsBoolean()),
                         ItemID.LOOTING_BAG_22586,
                         "Open Looting Bag"
                 ),

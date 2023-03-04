@@ -31,8 +31,8 @@ public interface LootbagUtilitiesConfig extends Config
 
 	@ConfigItem(
 			keyName = "removeLootingBagDestroy",
-			name = "Remove Destroy on Looting Bag",
-			description = "Remove destroy option from looting bag right-click menu when outside the wilderness"
+			name = "Allow Destroying the Looting Bag",
+			description = "Allow destroying looting bag depending whether in the wilderness"
 	)
 	default LootingBagDestroySetting LootingBagDestroySetting() {
 		return LootingBagDestroySetting.ALLOW_IN_WILDY;
@@ -40,8 +40,8 @@ public interface LootbagUtilitiesConfig extends Config
 
 	@ConfigItem(
 			keyName = "swapStoreAll",
-			name = "Swap store-all option in looting bag interface",
-			description = "Make store-all the dafault option in looting bag deposit interface"
+			name = "Swap store-all in looting bag deposit",
+			description = "Make store-all the default option in looting bag deposit interface"
 	)
 	default LootingBagStoreAll LootingBagStoreAll() {
 		return LootingBagStoreAll.SHIFT_CLICK;
@@ -49,7 +49,7 @@ public interface LootbagUtilitiesConfig extends Config
 
 	@ConfigSection(
 			name = "Other Destroyables",
-			description = "Remove destroy option on various misc. items",
+			description = "Remove destroy option on misc. items",
 			position = 99
 	)
 	String miscDestroyables = "miscDestroyables";
