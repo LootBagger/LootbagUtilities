@@ -117,6 +117,10 @@ public class LootbagUtilities extends Plugin {
                 new DestroyableItem(config::RemoveGemBagDestroy, ItemID.GEM_BAG_25628, "Alt Gem Bag"),
                 new DestroyableItem(config::RemoveGemBagDestroy, ItemID.OPEN_GEM_BAG, "Open Gem Bag"),
                 new DestroyableItem(config::RemoveTackleBoxDestroy, ItemID.TACKLE_BOX, "Tackle Box"),
+                new DestroyableItem(config::RemoveLogBasketDestroy, ItemID.LOG_BASKET, "Log Basket"),
+                new DestroyableItem(config::RemoveLogBasketDestroy, ItemID.OPEN_LOG_BASKET, "Open Log Basket"),
+                new DestroyableItem(config::RemoveForestryBasketDestroy, ItemID.FORESTRY_BASKET, "Forestry Basket"),
+                new DestroyableItem(config::RemoveForestryBasketDestroy, ItemID.OPEN_FORESTRY_BASKET, "Open Forestry Basket"),
         };
     }
 
