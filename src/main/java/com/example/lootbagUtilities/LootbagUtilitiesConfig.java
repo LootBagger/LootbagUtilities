@@ -117,4 +117,12 @@ public interface LootbagUtilitiesConfig extends Config
 			section = miscDestroyables
 	)
 	default boolean RemoveTackleBoxDestroy() { return false; }
+
+	@ConfigItem(
+		keyName = "removeForestryDestroy",
+		name = "Remove Destroy on forestry items",
+		description = "Remove destroy option from forestry kit, forestry basket and log basket right-click menu",
+		section = miscDestroyables
+	)
+	default boolean RemoveForestryDestroy() { return false; }
 }

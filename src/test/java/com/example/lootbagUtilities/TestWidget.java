@@ -3,12 +3,10 @@ package com.example.lootbagUtilities;
 import net.runelite.api.FontTypeFace;
 import net.runelite.api.Point;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetItem;
 import org.jetbrains.annotations.Range;
 
 import javax.annotation.Nullable;
 import java.awt.*;
-import java.util.Collection;
 
 public class TestWidget implements Widget {
     int id;
@@ -311,16 +309,6 @@ public class TestWidget implements Widget {
 
     @Override
     public Rectangle getBounds() {
-        return null;
-    }
-
-    @Override
-    public Collection<WidgetItem> getWidgetItems() {
-        return null;
-    }
-
-    @Override
-    public WidgetItem getWidgetItem(int index) {
         return null;
     }
 
@@ -785,7 +773,7 @@ public class TestWidget implements Widget {
     }
 
     @Override
-    public void setOnVarTransmitListener(Object... args) {
-
-    }
+    public void setOnVarTransmitListener(Object... args) {}
+	@Override
+	public void setOnScrollWheelListener(Object... args) {}
 }

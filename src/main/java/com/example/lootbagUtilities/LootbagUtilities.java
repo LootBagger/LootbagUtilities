@@ -8,7 +8,6 @@ import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -26,9 +25,11 @@ import java.util.Arrays;
 )
 public class LootbagUtilities extends Plugin {
     @Inject
+	@SuppressWarnings("unused")
     private Client client;
 
     @Inject
+	@SuppressWarnings("unused")
     private LootbagUtilitiesConfig config;
 
     // declarative way to remove destroy options on items
@@ -51,6 +52,12 @@ public class LootbagUtilities extends Plugin {
             this.itemName = itemName;
         }
     }
+
+	static final int LOOTING_BAG_INTERFACE_ID = 5308421;
+
+	private boolean isLootingBagInterfaceOpen() {
+		return client.getWidget(LOOTING_BAG_INTERFACE_ID) != null;
+	}
 
     // check varbits to determine if player is in wilderness
     // logs any unexpected varbit
@@ -117,6 +124,11 @@ public class LootbagUtilities extends Plugin {
                 new DestroyableItem(config::RemoveGemBagDestroy, ItemID.GEM_BAG_25628, "Alt Gem Bag"),
                 new DestroyableItem(config::RemoveGemBagDestroy, ItemID.OPEN_GEM_BAG, "Open Gem Bag"),
                 new DestroyableItem(config::RemoveTackleBoxDestroy, ItemID.TACKLE_BOX, "Tackle Box"),
+				new DestroyableItem(config::RemoveForestryDestroy, ItemID.OPEN_FORESTRY_BASKET, "Open Forestry Basket"),
+				new DestroyableItem(config::RemoveForestryDestroy, ItemID.FORESTRY_BASKET, "Forestry Basket"),
+				new DestroyableItem(config::RemoveForestryDestroy, ItemID.FORESTRY_KIT, "Forestry Kit"),
+				new DestroyableItem(config::RemoveForestryDestroy, ItemID.LOG_BASKET, "Log Basket"),
+				new DestroyableItem(config::RemoveForestryDestroy, ItemID.OPEN_LOG_BASKET, "Open Log Basket"),
         };
     }
 
@@ -194,6 +206,7 @@ public class LootbagUtilities extends Plugin {
     }
 
     @Subscribe
+	@SuppressWarnings("unused")
     public void onClientTick(ClientTick clientTick) {
         // don't swap if menu is open, otherwise items repeatedly swap back and forth
         if (client.getGameState() != GameState.LOGGED_IN || client.isMenuOpen()) {
@@ -236,11 +249,8 @@ public class LootbagUtilities extends Plugin {
         return entryStream.toArray(MenuEntry[]::new);
     }
 
-    private boolean isLootingBagInterfaceOpen() {
-        return client.getWidget(WidgetInfo.LOOTING_BAG_CONTAINER) != null;
-    }
-
     @Subscribe
+	@SuppressWarnings("unused")
     public void onMenuOpened(MenuOpened _unused) {
         MenuEntry[] entries = client.getMenuEntries();
         // Remove destroy options on various items
@@ -256,6 +266,7 @@ public class LootbagUtilities extends Plugin {
     }
 
     @Subscribe
+	@SuppressWarnings("unused")
     public void onMenuOptionClicked(MenuOptionClicked clickedOption) {
         Widget clickedWidget = clickedOption.getWidget();
         if ( clickedWidget != null
@@ -274,6 +285,7 @@ public class LootbagUtilities extends Plugin {
     }
 
     @Provides
+	@SuppressWarnings("unused")
     LootbagUtilitiesConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(LootbagUtilitiesConfig.class);
     }
